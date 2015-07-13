@@ -19,6 +19,11 @@
 (defn ^:private i-shift-to-label-directions [i size n]
   (get [(- i size) (dec i) (+ i size) (inc i)] n))
 
+(defn ^:private direction-ok-for-exploring? [x y size shift tiles n]
+  (and (tile-inside-borders? x y size n)
+       (tile-not-previously-visited? tiles (shift n))
+       (tile-not-a-wall? tiles (shift n))))
+
 (defn ^:private all-directions-explored? [n]
   (= n 4))
 
@@ -49,9 +54,7 @@
            acc-nodes (vec (rest nodes))]
       (cond (all-directions-explored? n)
               {:tiles acc-tiles :nodes acc-nodes}
-            (and (tile-inside-borders? x y size n)
-                 (tile-not-previously-visited? acc-tiles (shift n))
-                 (tile-not-a-wall? acc-tiles (shift n)))
+            (direction-ok-for-exploring? x y size shift acc-tiles n)
               (recur (inc n)
                      (mark-tile-as-visited acc-tiles (shift n))
                      (add-node-to-queue acc-nodes dir x y n))
