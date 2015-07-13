@@ -19,11 +19,6 @@
 (defn ^:private i-shift-to-label-directions [i size n]
   (get [(- i size) (dec i) (+ i size) (inc i)] n))
 
-(defn ^:private direction-ok-for-exploring? [x y size shift tiles n]
-  (and (tile-inside-borders? x y size n)
-       (tile-not-previously-visited? tiles (shift n))
-       (tile-not-a-wall? tiles (shift n))))
-
 (defn ^:private all-directions-explored? [n]
   (= n 4))
 
@@ -35,6 +30,11 @@
 
 (defn ^:private tile-not-a-wall? [tiles index]
   (not= :wall (:tile (get tiles index))))
+
+(defn ^:private direction-ok-for-exploring? [x y size shift tiles n]
+  (and (tile-inside-borders? x y size n)
+       (tile-not-previously-visited? tiles (shift n))
+       (tile-not-a-wall? tiles (shift n))))
 
 (defn ^:private mark-tile-as-visited [tiles index]
   (assoc-in tiles [index :visited] true))
