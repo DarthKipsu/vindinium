@@ -1,7 +1,5 @@
 (ns vindinium.pathfinder)
 
-(def labels [:north :west :south :east])
-
 (defn ^:private all-targets-aqquired? [found]
   (< 1 (count found)))
 
@@ -14,20 +12,50 @@
   (and (not (:tavern found))
        (= :tavern (:tile (get tiles i)))))
 
+(defn ^:private label [index]
+  (let [labels ["north" "west" "south" "east"]]
+    (get labels index)))
+
+(defn ^:private i-shift-to-label-directions [i size n]
+  (get [(- i size) (dec i) (+ i size) (inc i)] n))
+
+(defn ^:private all-directions-explored? [n]
+  (= n 4))
+
+(defn ^:private tile-inside-borders? [x y size n]
+  (get [(pos? y) (pos? x) (< y (dec size)) (< x (dec size))] n))
+
+(defn ^:private tile-not-previously-visited? [tiles index]
+  (not (:visited (get tiles index))))
+
+(defn ^:private tile-not-a-wall? [tiles index]
+  (not= :wall (:tile (get tiles index))))
+
+(defn ^:private mark-tile-as-visited [tiles index]
+  (assoc-in tiles [index :visited] true))
+
+(defn ^:private shift-coordinates [x y n]
+  (get [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]] n))
+
+(defn ^:private add-node-to-queue [nodes direction x y n]
+  (let [new-coords (partial shift-coordinates x y)]
+    (conj nodes {:direction (conj direction (label n))
+                 :coord (new-coords n)})))
+
 (defn ^:private explore-neighbouring-nodes [tiles size nodes x y i dir]
-  (let [movements [(- i size) (dec i) (+ i size) (inc i)]
-        tile-inside-borders [(pos? y) (pos? x) (< y (dec size)) (< x (dec size))]
-        new-coords [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]]]
-    (loop [acc-index 0 acc-tiles tiles acc-nodes (vec (rest nodes))]
-      (if (= 4 acc-index) {:tiles acc-tiles :nodes acc-nodes}
-          (if (and (get tile-inside-borders acc-index)
-                   (not (:visited (get acc-tiles (get movements acc-index))))
-                   (not= :wall (:tile (get acc-tiles (get movements acc-index)))))
-              (recur (inc acc-index)
-                     (assoc-in acc-tiles [(get movements acc-index) :visited] true)
-                     (conj acc-nodes {:direction (conj dir (name (get labels acc-index)))
-                                                   :coord (get new-coords acc-index)}))
-              (recur (inc acc-index) acc-tiles acc-nodes))))))
+  (let [shift (partial i-shift-to-label-directions i size)]
+    (loop [n 0
+           acc-tiles tiles
+           acc-nodes (vec (rest nodes))]
+      (cond (all-directions-explored? n)
+              {:tiles acc-tiles :nodes acc-nodes}
+            (and (tile-inside-borders? x y size n)
+                 (tile-not-previously-visited? acc-tiles (shift n))
+                 (tile-not-a-wall? acc-tiles (shift n)))
+              (recur (inc n)
+                     (mark-tile-as-visited acc-tiles (shift n))
+                     (add-node-to-queue acc-nodes dir x y n))
+            :else (recur (inc n) acc-tiles acc-nodes)))))
 
 (defn ^:private lookup-closest [found tiles size nodes]
   (let [node (first nodes)
