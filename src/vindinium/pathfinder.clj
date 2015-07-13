@@ -1,0 +1,53 @@
+(ns vindinium.pathfinder)
+
+(defn lookup-closest [found tiles size nodes]
+  (let [node (first nodes)
+        x (first (:coord node))
+        y (second (:coord node))
+        i (+ (* y size) x)
+        dir (:direction node)]
+    (cond (< 1 (count found))
+            found
+          (and (not (:mine found)) (= :mine (:tile (get tiles i))) (not= 1 (:of (:tile (get tiles i)))))
+            (recur (assoc found :mine dir) tiles size nodes)
+          (and (not (:tavern found)) (= :tavern (:tile (get tiles i))))
+            (recur (assoc found :tavern dir) tiles size nodes)
+          :else
+          (let [north (- i size)
+                west (dec i)
+                south (+ i size)
+                east (inc i)
+                north-nodes (if (and (pos? y) (not (:visited (get tiles north))) (not= :wall (:tile (get tiles north))))
+                              (conj (vec (rest nodes)) {:direction (conj dir "north")
+                                           :coord [x (dec y)]})
+                              (vec (rest nodes)))
+                west-nodes (if (and (pos? x) (not (:visited (get tiles west))) (not= :wall (:tile (get tiles west))))
+                             (conj north-nodes {:direction (conj dir "west")
+                                                :coord [(dec x) y]})
+                             north-nodes)
+                south-nodes (if (and (< y (dec size)) (not (:visited (get tiles south))) (not= :wall (:tile (get tiles south))))
+                              (conj west-nodes {:direction (conj dir "south")
+                                                :coord [x (inc y)]})
+                              west-nodes)
+                east-nodes (if (and (< x (dec size)) (not (:visited (get tiles east))) (not= :wall (:tile (get tiles east))))
+                             (conj south-nodes {:direction (conj dir "east")
+                                                :coord [(inc x) y]})
+                             south-nodes)
+                north-tiles (if (pos? y)
+                              (assoc-in tiles [north :visited] true)
+                              tiles)
+                west-tiles (if (pos? x)
+                             (assoc-in north-tiles [west :visited] true)
+                             tiles)
+                south-tiles (if (< y (dec size))
+                              (assoc-in west-tiles [south :visited] true)
+                              tiles)
+                east-tiles (if (< x (dec size))
+                             (assoc-in south-tiles [east :visited] true)
+                             tiles)]
+              (recur found east-tiles size east-nodes)))))
+
+(defn breath-first-search [board start-pos]
+  (let [size (:size board)
+        tiles (:tiles board)]
+    (lookup-closest {} tiles size [{:direction [] :coord start-pos}])))

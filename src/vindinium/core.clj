@@ -1,6 +1,7 @@
 (ns vindinium.core
   (:gen-class)
   (:use [vindinium.debug_help :only [print-board-from-input]]
+        [vindinium.pathfinder :only [breath-first-search]]
         [slingshot.slingshot :only [try+, throw+]]
         [clojure.core.match :only [match]]))
 
@@ -10,8 +11,15 @@
 
 (defn bot [input]
   "Implement this function to create your bot!"
+  (let [closest (breath-first-search (:board (:game input)) (:pos (:hero input)))
+        mine (:mine closest)
+        tavern (:tavern closest)]
+    (println mine)
+    (println (first mine))
+    (first mine)))
   ; (prn input)
-  (first (shuffle ["north", "south", "east", "west", "stay"])))
+  ;(println )
+  ;(first (shuffle ["north", "south", "east", "west", "stay"])))
 
 (defn at [[x y] tiles size]
   (tiles (+ (* y size) x)))
@@ -56,7 +64,7 @@
 
 (defn step [from]
   (loop [input from]
-    (print-board-from-input input)
+    ;(print-board-from-input input)
     (let [next (request (:playUrl input) {:dir (bot input)})]
       (if (:finished (:game next)) (println "") (recur next)))))
 
@@ -64,6 +72,7 @@
   (let [input (request (str server-url "/api/training") {:key secret-key :turns turns})]
     (println (str "Starting training game " (:viewUrl input)))
     (step input)
+    (println input)
     (println (str "Finished training game " (:viewUrl input)))))
 
 (defn arena [secret-key games]
