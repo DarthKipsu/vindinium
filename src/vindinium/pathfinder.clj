@@ -1,7 +1,7 @@
 (ns vindinium.pathfinder)
 
-(defn ^:private all-targets-aqquired? [found]
-  (< 1 (count found)))
+(defn ^:private target-aqquired? [found target]
+  (get found target))
 
 (defn ^:private closest-mine-located? [found tiles i]
   (and (not (:mine found))
@@ -11,6 +11,11 @@
 (defn ^:private closest-tavern-located? [found tiles i]
   (and (not (:tavern found))
        (= :tavern (:tile (get tiles i)))))
+
+(defn ^:private tavern-or-mine? [tiles i]
+  (let [tile-type (:tile (get tiles i))]
+    (or (= :mine tile-type)
+        (= :tavern tile-type))))
 
 (defn ^:private label [index]
   (let [labels ["north" "west" "south" "east"]]
@@ -60,23 +65,25 @@
                      (add-node-to-queue acc-nodes dir x y n))
             :else (recur (inc n) acc-tiles acc-nodes)))))
 
-(defn ^:private lookup-closest [found tiles size nodes]
+(defn ^:private lookup-closest [found tiles size nodes target]
   (let [node (first nodes)
         x (first (:coord node))
         y (second (:coord node))
         i (+ (* y size) x)
         dir (:direction node)]
-    (cond (all-targets-aqquired? found)
+    (cond (target-aqquired? found target)
             found
           (closest-mine-located? found tiles i)
-            (recur (assoc found :mine dir) tiles size nodes)
+            (recur (assoc found :mine dir) tiles size (vec (rest nodes)) target)
           (closest-tavern-located? found tiles i)
-            (recur (assoc found :tavern dir) tiles size nodes)
+            (recur (assoc found :tavern dir) tiles size (vec (rest nodes)) target)
+          (tavern-or-mine? tiles i)
+            (recur found tiles size (vec (rest nodes)) target)
           :else
           (let [visited (explore-neighbouring-nodes tiles size nodes x y i dir)]
-            (recur found (:tiles visited) size (:nodes visited))))))
+            (recur found (:tiles visited) size (:nodes visited) target)))))
 
-(defn breath-first-search [board start-pos]
+(defn breath-first-search [board start-pos target]
   (let [size (:size board)
         tiles (:tiles board)]
-    (lookup-closest {} tiles size [{:direction [] :coord start-pos}])))
+    (lookup-closest {} tiles size [{:direction [] :coord start-pos}] target)))

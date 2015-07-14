@@ -11,15 +11,10 @@
 
 (defn bot [input]
   "Implement this function to create your bot!"
-  (let [closest (breath-first-search (:board (:game input)) (:pos (:hero input)))
-        mine (:mine closest)
-        tavern (:tavern closest)]
+  (let [closest (partial breath-first-search (:board (:game input)) (:pos (:hero input)))
+        mine (:mine (closest :mine))]
     (println mine)
-    (println (first mine))
     (first mine)))
-  ; (prn input)
-  ;(println )
-  ;(first (shuffle ["north", "south", "east", "west", "stay"])))
 
 (defn at [[x y] tiles size]
   (tiles (+ (* y size) x)))
