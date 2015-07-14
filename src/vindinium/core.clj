@@ -1,7 +1,7 @@
 (ns vindinium.core
   (:gen-class)
   (:use [vindinium.debug_help :only [print-board-from-input]]
-        [vindinium.pathfinder :only [breath-first-search]]
+        [vindinium.pathfinder :only [breadth-first-search]]
         [slingshot.slingshot :only [try+, throw+]]
         [clojure.core.match :only [match]]))
 
@@ -10,8 +10,7 @@
 (def server-url "http://vindinium.org")
 
 (defn bot [input]
-  "Implement this function to create your bot!"
-  (let [closest (partial breath-first-search
+  (let [closest (partial breadth-first-search
                          (:board (:game input))
                          (:pos (:hero input))
                          (:id (:hero input)))
