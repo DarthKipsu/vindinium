@@ -11,10 +11,10 @@
 
 (defn bot [input]
   "Implement this function to create your bot!"
-  (let [closest (partial breath-first-search (:board (:game input)) (:pos (:hero input)))
-        mine (:mine (closest :mine))]
-    (println mine)
-    (first mine)))
+  (let [closest (partial breath-first-search (:board (:game input)) (:pos (:hero input)))]
+    (if (> 40 (:life (:hero input)))
+      (first (:tavern (closest :tavern)))
+      (first (:mine (closest :mine))))))
 
 (defn at [[x y] tiles size]
   (tiles (+ (* y size) x)))
