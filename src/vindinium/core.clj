@@ -11,7 +11,10 @@
 
 (defn bot [input]
   "Implement this function to create your bot!"
-  (let [closest (partial breath-first-search (:board (:game input)) (:pos (:hero input)))]
+  (let [closest (partial breath-first-search
+                         (:board (:game input))
+                         (:pos (:hero input))
+                         (:id (:hero input)))]
     (if (> 40 (:life (:hero input)))
       (first (:tavern (closest :tavern)))
       (first (:mine (closest :mine))))))
@@ -39,7 +42,7 @@
          [\# \#] {:tile :wall}
          [\[ \]] {:tile :tavern}
          [\$ \-] {:tile :mine}
-         [\$ i] {:tile :mine :of i}
+         [\$ i] {:tile :mine :of (Integer/parseInt (str i))}
          [\@ i] {:tile :hero :id (Integer/parseInt (str i))}))
 
 (defn parse-tiles [tiles] (map parse-tile (partition 2 (seq tiles))))
