@@ -6,7 +6,7 @@
 (defn ^:private closest-mine-located? [found tiles i]
   (and (not (:mine found))
        (= :mine (:tile (get tiles i)))
-       (not= 1 (:of (:tile (get tiles i))))))
+       (not= \1 (:of (get tiles i)))))
 
 (defn ^:private closest-tavern-located? [found tiles i]
   (and (not (:tavern found))
