@@ -82,11 +82,15 @@
 
 (def usage
   "Usage:
-  training <secret-key> <number-of-turns>
-  arena <secret-key> <number-of-games")
+  training <number-of-turns>
+  arena <number-of-games")
 
 (defn -main [& args]
-  (match (vec args)
-         ["training", secret-key, nb] (training secret-key nb)
-         ["arena", secret-key, nb] (arena secret-key nb)
-         :else (println usage)))
+  (if (.exists (clojure.java.io/as-file "secretkey"))
+    (let [secret-key (clojure.string/trim (slurp "secretkey"))]
+      (match (vec args)
+             ["training", nb] (training secret-key nb)
+             ["arena", nb] (arena secret-key nb)
+             :else (.println *err* usage)))
+    (.println *err* "Missing secret key! Please add your secret key to file named secretkey.")))
+    
