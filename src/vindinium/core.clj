@@ -66,14 +66,14 @@
     (let [next (request (:playUrl input) {:dir (bot input)})]
       (if (:finished (:game next)) (println "") (recur next)))))
 
-(defn training [secret-key turns]
+(defn training-real [secret-key turns]
   (let [input (request (str server-url "/api/training") {:key secret-key :turns turns})]
     (println (str "Starting training game " (:viewUrl input)))
     (step input)
     (println input)
     (println (str "Finished training game " (:viewUrl input)))))
 
-(defn arena [secret-key games]
+(defn arena-real [secret-key games]
   (loop [it 1]
     (let [p #(println (str "[" it "/" games "] " %))
           _ (p "Waiting for pairing...")
@@ -83,17 +83,23 @@
       (p (str "Finished arena game " (:viewUrl input)))
       (when (< it games) (recur (+ it 1))))))
 
+(defn secret-key []
+  (if (.exists (clojure.java.io/as-file "secretkey"))
+    (clojure.string/trim (slurp "secretkey"))
+    (throw (Exception. "Missing secret key! Please add your secret key to file named secretkey."))))
+
+(def training (partial training-real (secret-key)))
+(def arena (partial arena-real (secret-key)))
+ 
+
 (def usage
   "Usage:
   training <number-of-turns>
   arena <number-of-games")
 
 (defn -main [& args]
-  (if (.exists (clojure.java.io/as-file "secretkey"))
-    (let [secret-key (clojure.string/trim (slurp "secretkey"))]
-      (match (vec args)
-             ["training", nb] (training secret-key nb)
-             ["arena", nb] (arena secret-key nb)
-             :else (.println *err* usage)))
-    (.println *err* "Missing secret key! Please add your secret key to file named secretkey.")))
-    
+  (match (vec args)
+         ["training", nb] (training nb)
+         ["arena", nb] (arena nb)
+         :else (.println *err* usage)))
+
