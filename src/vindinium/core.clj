@@ -14,10 +14,14 @@
   (let [closest (partial breath-first-search
                          (:board (:game input))
                          (:pos (:hero input))
-                         (:id (:hero input)))]
-    (if (> 40 (:life (:hero input)))
-      (first (:tavern (closest :tavern)))
-      (first (:mine (closest :mine))))))
+                         (:id (:hero input)))
+        life (:life (:hero input))]
+    (cond (> 40 life) (first (:tavern (closest :tavern)))
+          (>= 50 life) (let [search (closest :mine)]
+                         (if (:tavern search)
+                           (first (:tavern search))
+                           (first (:mine search))))
+          :else (first (:mine (closest :mine))))))
 
 (defn at [[x y] tiles size]
   (tiles (+ (* y size) x)))
