@@ -5,8 +5,8 @@
 (def ^:private taverns (atom '()))
 (def ^:private spawn (atom '()))
 
-(defn to-key [i n]
-  (keyword (str (mod i n) "-" (quot i n)))) ; muuta
+(defn to-key [i]
+  (keyword (str i)))
 
 (defn ^:private set-spawn-positions [spawnPos n]
   (swap! spawn (map (fn [[x y]] (+ x (* n y))) spawnPos)))
@@ -17,7 +17,9 @@
            (some #(= i %) spawn))))
 
 (defn ^:private add-direction [from to label]
-  (swap! board (assoc board (to-key from to) [label])))
+  (let [f-key (to-key from)
+        t-key (to-key to)]
+  (swap! board assoc-in [f-key] (assoc (get @board f-key) t-key [label]))))
 
 (defn ^:private set-trivial-distances [tiles n i node]
   (if (= :mine (:tile node)) (swap! mines (assoc mines (to-key i n))))
@@ -38,6 +40,3 @@
 (defn map-board [board spawnPos]
   (set-spawn-positions spawnPos (:size board))
   (create-initial-graph board))
-
-
-; MUUTA KEYWORDIT INDEXEIKSI!!!!!!!!!!!!!!!!!!
