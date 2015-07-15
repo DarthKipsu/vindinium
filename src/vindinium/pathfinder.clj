@@ -12,10 +12,17 @@
   (and (not (:tavern found))
        (= :tavern (:tile (get tiles i)))))
 
+(defn ^:private enemy-located? [found tiles i id]
+  (and (= :hero (:tile (get tiles i)))  ; Tähän tarvitaan vielä tsekkaus onko
+       (not= id (:id (get tiles i)))))  ; eka kerta kun nähdään tämä tyyppi??
+
 (defn ^:private tavern-or-mine? [tiles i]
   (let [tile-type (:tile (get tiles i))]
     (or (= :mine tile-type)
         (= :tavern tile-type))))
+
+(defn ^:private enemy [tiles i]
+  (keyword (str "enemy" (:id (get tiles i)))))
 
 (defn ^:private label [index]
   (let [labels ["north" "west" "south" "east"]]
@@ -77,6 +84,8 @@
             (recur (assoc found :mine dir) tiles size (vec (rest nodes)) id target)
           (closest-tavern-located? found tiles i)
             (recur (assoc found :tavern dir) tiles size (vec (rest nodes)) id target)
+          (enemy-located? found tiles i id)
+            (recur (assoc found (enemy tiles i) dir) tiles size (vec (rest nodes)) id target)
           (tavern-or-mine? tiles i)
             (recur found tiles size (vec (rest nodes)) id target)
           :else

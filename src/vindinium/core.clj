@@ -9,18 +9,39 @@
 
 (def server-url "http://vindinium.org")
 
+(defn closest-enemy [closest]
+  (let [enemy1 (:enemy1 closest)
+        enemy2 (:enemy2 closest)
+        enemy3 (:enemy3 closest)
+        enemy4 (:enemy4 closest)
+        info1 (if enemy1 [1 enemy1] nil)
+        info2 (if enemy2 [2 enemy2] nil)
+        info3 (if enemy3 [3 enemy3] nil)
+        info4 (if enemy4 [4 enemy4] nil)]
+    (reduce
+      (fn [a b] (cond (and a b) (if (< (count (get a 1)) (count (get b 1))) a b)
+                      a a
+                      b b
+                      :else nil))
+      [info1 info2 info3 info4])))
+
 (defn bot [input]
   (let [closest (partial breadth-first-search
                          (:board (:game input))
                          (:pos (:hero input))
                          (:id (:hero input)))
         life (:life (:hero input))]
-    (cond (> 40 life) (first (:tavern (closest :tavern)))
+    (cond (> 40 life) (let [search (closest :tavern)]
+                        (println (closest-enemy search))
+                        (first (:tavern (closest :tavern))))
           (>= 70 life) (let [search (closest :mine)]
+                         (println (closest-enemy search))
                          (if (:tavern search)
                            (first (:tavern search))
                            (first (:mine search))))
-          :else (first (:mine (closest :mine))))))
+          :else (let [search (closest :mine)]
+                  (println (closest-enemy search))
+                  (first (:mine (closest :mine)))))))
 
 (defn at [[x y] tiles size]
   (tiles (+ (* y size) x)))
