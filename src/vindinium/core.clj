@@ -16,7 +16,7 @@
                          (:id (:hero input)))
         life (:life (:hero input))]
     (cond (> 40 life) (first (:tavern (closest :tavern)))
-          (>= 50 life) (let [search (closest :mine)]
+          (>= 70 life) (let [search (closest :mine)]
                          (if (:tavern search)
                            (first (:tavern search))
                            (first (:mine search))))
