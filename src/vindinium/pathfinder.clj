@@ -13,8 +13,9 @@
        (= :tavern (:tile (get tiles i)))))
 
 (defn ^:private enemy-located? [found tiles i id]
-  (and (= :hero (:tile (get tiles i)))  ; Tähän tarvitaan vielä tsekkaus onko
-       (not= id (:id (get tiles i)))))  ; eka kerta kun nähdään tämä tyyppi??
+  (and (= :hero (:tile (get tiles i)))
+       (not= id (:id (get tiles i)))
+       (not (contains? found (enemy tiles i)))))
 
 (defn ^:private tavern-or-mine? [tiles i]
   (let [tile-type (:tile (get tiles i))]
@@ -85,7 +86,7 @@
           (closest-tavern-located? found tiles i)
             (recur (assoc found :tavern dir) tiles size (vec (rest nodes)) id target)
           (enemy-located? found tiles i id)
-            (recur (assoc found (enemy tiles i) dir) tiles size (vec (rest nodes)) id target)
+            (recur (assoc found (enemy tiles i) dir) tiles size nodes id target)
           (tavern-or-mine? tiles i)
             (recur found tiles size (vec (rest nodes)) id target)
           :else
