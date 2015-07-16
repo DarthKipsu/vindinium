@@ -1,12 +1,14 @@
 (ns vindinium.ai
   (:use [vindinium.pathfinder :only [breadth-first-search]]))
 
+(defn ^:private compare-distance [enemy1 enemy2]
+  (if (< (count (get enemy1 1)) (count (get enemy2 1))) enemy1 enemy2))
+
 (defn ^:private smaller-distance [a b]
-  (let [compare-distance (fn [a b] (if (< (count (get a 1)) (count (get b 1))) a b))]
-    (cond (and a b) (compare-distance a b)
+  (cond (and a b) (compare-distance a b)
           a a
           b b
-          :else nil)))
+          :else nil))
 
 (defn closest-enemy [closest]
   (let [enemy1 (:enemy1 closest)
