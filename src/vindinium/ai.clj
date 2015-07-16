@@ -1,6 +1,13 @@
 (ns vindinium.ai
   (:use [vindinium.pathfinder :only [breadth-first-search]]))
 
+(defn ^:private smaller-distance [a b]
+  (let [compare-distance (if (< (count (get a 1)) (count (get b 1))) a b)]
+    (cond (and a b) (compare-distance a b)
+          a a
+          b b
+          :else nil)))
+
 (defn closest-enemy [closest]
   (let [enemy1 (:enemy1 closest)
         enemy2 (:enemy2 closest)
@@ -11,12 +18,7 @@
         info3 (if enemy3 [3 enemy3] nil)
         info4 (if enemy4 [4 enemy4] nil)]
     (if (or info1 info2 info3 info4) (println info1 info2 info3 info4))
-    (reduce
-      (fn [a b] (cond (and a b) (if (< (count (get a 1)) (count (get b 1))) a b)
-                      a a
-                      b b
-                      :else nil))
-      [info1 info2 info3 info4])))
+    (reduce smaller-distance [info1 info2 info3 info4])))
 
 (defn go-towards-mine [input]
   (let [search (breadth-first-search (:board (:game input))
@@ -25,9 +27,9 @@
                                      :mine)
         life (:life (:hero input))
         enemy (closest-enemy search)]
-          (if (>= 70 life) (if (:tavern search) (first (:tavern search))
-                             (first (:mine search)))
-            (first (:mine search)))))
+    (if (and (>= 70 life) (:tavern search))
+      (first (:tavern search))
+      (first (:mine search)))))
 
 (defn go-towards-tavern [input]
   (let [search (breadth-first-search (:board (:game input))
