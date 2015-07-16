@@ -2,7 +2,7 @@
   (:use [vindinium.pathfinder :only [breadth-first-search]]))
 
 (defn ^:private smaller-distance [a b]
-  (let [compare-distance (if (< (count (get a 1)) (count (get b 1))) a b)]
+  (let [compare-distance (fn [a b] (if (< (count (get a 1)) (count (get b 1))) a b))]
     (cond (and a b) (compare-distance a b)
           a a
           b b
