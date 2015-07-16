@@ -15,7 +15,7 @@
 (defn ^:private enemy-located? [found tiles i id]
   (and (= :hero (:tile (get tiles i)))
        (not= id (:id (get tiles i)))
-       (not (contains? found (enemy tiles i)))))
+       (not (contains? found (get tiles i)))))
 
 (defn ^:private tavern-or-mine? [tiles i]
   (let [tile-type (:tile (get tiles i))]
@@ -48,6 +48,12 @@
   (and (tile-inside-borders? x y size n)
        (tile-not-previously-visited? tiles (shift n))
        (tile-not-a-wall? tiles (shift n))))
+
+(defn ^:private direction-ok-for-escaping? [x y size shift tiles n]
+  (and (tile-inside-borders? x y size n)
+       (tile-not-a-wall? tiles (shift n))
+       (not= :mine (:tile (get tiles (shift n))))
+       (not= :hero (:tile (get tiles (shift n))))))
 
 (defn ^:private mark-tile-as-visited [tiles index]
   (assoc-in tiles [index :visited] true))
@@ -93,10 +99,33 @@
           (let [visited (explore-neighbouring-nodes tiles size nodes x y i dir)]
             (recur found (:tiles visited) size (:nodes visited) id target)))))
 
-(defn breadth-first-search [input target]
+(defn ^:private back-away [tiles size enemy start id]
+  (let [x (first start)
+        y (second start)
+        i (+ (* y size) x)
+        shift (partial i-shift-to-label-directions i size)
+        n (atom 3)
+        direction (atom (first enemy))]
+    (while (>= @n 0)
+      (if (and (direction-ok-for-escaping? x y size shift tiles @n)
+               (not= (first enemy) (label @n)))
+        (do (swap! direction (fn [x] (label @n))) 
+            (swap! n (fn [x] -1)))
+        (swap! n dec)))
+    @direction))
+
+(defn ^:private take-action [action input target]
   (let [board (:board (:game input))
         size (:size board)
         tiles (:tiles board)
         start (:pos (:hero input))
         id (:id (:hero input))]
-    (lookup-closest {} tiles size [{:direction [] :coord start}] id target)))
+    (if (= :search action)
+      (lookup-closest {} tiles size [{:direction [] :coord start}] id target)
+      (back-away tiles size target start id))))
+
+(defn breadth-first-search [input target]
+  (take-action :search input target))
+
+(defn escape-enemy [input enemy]
+  (take-action :escape input enemy))
