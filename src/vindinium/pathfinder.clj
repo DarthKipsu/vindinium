@@ -92,7 +92,10 @@
           (let [visited (explore-neighbouring-nodes tiles size nodes x y i dir)]
             (recur found (:tiles visited) size (:nodes visited) id target)))))
 
-(defn breadth-first-search [board start-pos id target]
-  (let [size (:size board)
-        tiles (:tiles board)]
-    (lookup-closest {} tiles size [{:direction [] :coord start-pos}] id target)))
+(defn breadth-first-search [input target]
+  (let [board (:board (:game input))
+        size (:size board)
+        tiles (:tiles board)
+        start (:pos (:hero input))
+        id (:id (:hero input))]
+    (lookup-closest {} tiles size [{:direction [] :coord start}] id target)))

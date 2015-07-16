@@ -21,10 +21,7 @@
     (reduce smaller-distance [info1 info2 info3 info4])))
 
 (defn go-towards-mine [input]
-  (let [search (breadth-first-search (:board (:game input))
-                                     (:pos (:hero input))
-                                     (:id (:hero input))
-                                     :mine)
+  (let [search (breadth-first-search input :mine)
         life (:life (:hero input))
         enemy (closest-enemy search)]
     (if (and (>= 70 life) (:tavern search))
@@ -32,10 +29,7 @@
       (first (:mine search)))))
 
 (defn go-towards-tavern [input]
-  (let [search (breadth-first-search (:board (:game input))
-                                     (:pos (:hero input))
-                                     (:id (:hero input))
-                                     :tavern)
+  (let [search (breadth-first-search input :tavern)
         enemy (closest-enemy search)]
     (first (:tavern search))))
 
