@@ -12,18 +12,18 @@
   (and (not (:tavern found))
        (= :tavern (:tile (get tiles i)))))
 
+(defn ^:private enemy [tiles i]
+  (keyword (str "enemy" (:id (get tiles i)))))
+
 (defn ^:private enemy-located? [found tiles i id]
   (and (= :hero (:tile (get tiles i)))
        (not= id (:id (get tiles i)))
-       (not (contains? found (get tiles i)))))
+       (not (contains? found (enemy tiles i)))))
 
 (defn ^:private tavern-or-mine? [tiles i]
   (let [tile-type (:tile (get tiles i))]
     (or (= :mine tile-type)
         (= :tavern tile-type))))
-
-(defn ^:private enemy [tiles i]
-  (keyword (str "enemy" (:id (get tiles i)))))
 
 (defn ^:private label [index]
   (let [labels ["north" "west" "south" "east"]]
