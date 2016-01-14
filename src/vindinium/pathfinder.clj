@@ -1,4 +1,5 @@
-(ns vindinium.pathfinder)
+(ns vindinium.pathfinder
+  (:require [clojure.math.numeric-tower :as math]))
 
 (defn- ^{:testable true} target-aqquired? [found target]
   (boolean (get found target)))
@@ -25,60 +26,63 @@
     (or (= :mine tile-type)
         (= :tavern tile-type))))
 
-(defn- label [direction]
+(defn- ^{:testable true} label [direction]
   (let [labels ["north" "west" "south" "east"]]
     (get labels direction)))
 
-(defn- north [i board-size]
+(defn- ^{:testable true} north [i board-size]
   (- i board-size))
 
-(defn- west [i]
+(defn- ^{:testable true} west [i]
   (dec i))
 
-(defn- south [i board-size]
+(defn- ^{:testable true} south [i board-size]
   (+ i board-size))
 
-(defn- east [i]
+(defn- ^{:testable true} east [i]
   (inc i))
 
-(defn- shift-i-to-direction [i size direction]
+(defn- ^{:testable true} shift-i-to-direction [i size direction]
   (get [(north i size) (west i) (south i size) (east i)] direction))
 
-(defn- all-directions-explored? [direction]
-  (= direction 4))
+(defn- ^{:testable true} all-directions-explored? [direction]
+  (or (> direction 3) (< direction 0)))
 
-(defn- tile-inside-borders? [coord size direction]
-  (let [x (first coord)
-        y (second coord)]
-    (get [(pos? y) (pos? x) (< y (dec size)) (< x (dec size))] direction)))
+(defn- ^{:testable true} tile-inside-borders? [tiles i start]
+  (let [tile-count (count tiles)
+        size (math/sqrt tile-count)]
+    (and (>= i 0)
+         (< i tile-count)
+         (if (zero? (mod start size)) (not= i (dec start)) true)
+         (if (= (dec size) (mod start size)) (not= i (inc start)) true))))
 
-(defn- shift-coordinates [coord direction]
+(defn- ^{:testable true} shift-coordinates [coord direction]
   (let [x (first coord)
         y (second coord)]
     (get [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]] direction)))
 
-(defn- tile-not-previously-visited? [tiles i]
+(defn- ^{:testable true} tile-not-previously-visited? [tiles i]
   (not (:visited (get tiles i))))
 
-(defn- tile-not-a-wall? [tiles i]
+(defn- ^{:testable true} tile-not-a-wall? [tiles i]
   (not= :wall (:tile (get tiles i))))
 
-(defn- tile-not-a-mine? [tiles i]
+(defn- ^{:testable true} tile-not-a-mine? [tiles i]
   (not= :mine (:tile (get tiles i))))
 
-(defn- tile-not-a-hero? [tiles i]
+(defn- ^{:testable true} tile-not-a-hero? [tiles i]
   (not= :hero (:tile (get tiles i))))
 
-(defn- direction-ok-for-exploring? [coord size shift tiles direction]
-  (and (tile-inside-borders? coord size direction)
-       (tile-not-previously-visited? tiles (shift direction))
-       (tile-not-a-wall? tiles (shift direction))))
+(defn- ^{:testable true} direction-ok-for-exploring? [tiles i start]
+  (and (tile-inside-borders? tiles i start)
+       (tile-not-previously-visited? tiles i)
+       (tile-not-a-wall? tiles i)))
 
-(defn- direction-ok-for-escaping? [coord size shift tiles direction]
-  (and (tile-inside-borders? coord size direction)
-       (tile-not-a-wall? tiles (shift direction))
-       (tile-not-a-mine? tiles (shift direction))
-       (tile-not-a-hero? tiles (shift direction))))
+(defn- ^{:testable true} direction-ok-for-escaping? [tiles i start]
+  (and (tile-inside-borders? tiles i start)
+       (tile-not-a-wall? tiles i)
+       (tile-not-a-mine? tiles i)
+       (tile-not-a-hero? tiles i)))
 
 (defn- mark-tile-as-visited [tiles index]
   (assoc-in tiles [index :visited] true))
@@ -95,7 +99,7 @@
            acc-nodes (vec (rest nodes))]
       (cond (all-directions-explored? n)
               {:tiles acc-tiles :nodes acc-nodes}
-            (direction-ok-for-exploring? coord size shift acc-tiles n)
+            (direction-ok-for-exploring? acc-tiles (shift n) i)
               (recur (inc n)
                      (mark-tile-as-visited acc-tiles (shift n))
                      (add-node-to-queue acc-nodes dir coord n))
@@ -128,7 +132,7 @@
         shift (partial shift-i-to-direction i size)
         direction (atom (first enemy))]
     (dotimes [n 4]
-      (if (and (direction-ok-for-escaping? coord size shift tiles n)
+      (if (and (direction-ok-for-escaping? tiles (shift n) i)
                (not= (first enemy) (label n)))
         (swap! direction (fn [x] (label n)))))
     (println "Escaping to", @direction)

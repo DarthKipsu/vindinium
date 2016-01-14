@@ -9,7 +9,7 @@
 (def test-tiles [{:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall}
                  {:tile :wall} {:tile :hero :id 1} {:tile :mine :of 1} {:tile :air} {:tile :mine} {:tile :hero :id 2} {:tile :wall}
                  {:tile :wall} {:tile :air} {:tile :air} {:tile :air} {:tile :air} {:tile :air} {:tile :wall}
-                 {:tile :wall} {:tile :air} {:tile :tavern} {:tile :wall} {:tile :tavern} {:tile :air} {:tile :wall}
+                 {:tile :wall} {:tile :air} {:tile :tavern} {:tile :wall :visited true} {:tile :tavern} {:tile :air} {:tile :wall}
                  {:tile :wall} {:tile :air} {:tile :air} {:tile :air} {:tile :air} {:tile :air} {:tile :wall}
                  {:tile :wall} {:tile :hero :id 3} {:tile :mine} {:tile :air} {:tile :mine} {:tile :hero :id 4} {:tile :wall}
                  {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall}])
@@ -49,3 +49,69 @@
     (tavern-or-mine? test-tiles 9) => true
     (tavern-or-mine? test-tiles 23) => true
     (tavern-or-mine? test-tiles 8) => false))
+
+(facts "cardinal directions are handled correctly"
+  (fact "directions are correctly labeled"
+    (label 0) => "north"
+    (label 1) => "west"
+    (label 2) => "south"
+    (label 3) => "east")
+  (fact "tile index moves to correct directions"
+    (north 16 7) => 9
+    (west 16) => 15
+    (south 16 7) => 23
+    (east 16) => 17)
+  (fact "moving index with shifting moves to correct direction"
+    (shift-i-to-direction 16 7 0) => 9
+    (shift-i-to-direction 16 7 1) => 15
+    (shift-i-to-direction 16 7 2) => 23
+    (shift-i-to-direction 16 7 3) => 17))
+
+(facts "tile propertis and border cases checked correctly"
+  (fact "knows when all directions are explored based on current direction"
+    (all-directions-explored? 4) => true
+    (all-directions-explored? -1) => true
+    (all-directions-explored? 3) => false
+    (all-directions-explored? 0) => false)
+  (fact "can tell if a tile is inside the borders of the game grid"
+    (tile-inside-borders? test-tiles -7 0) => false
+    (tile-inside-borders? test-tiles -1 0) => false
+    (tile-inside-borders? test-tiles 7 0) => true
+    (tile-inside-borders? test-tiles 2 0) => true
+    (tile-inside-borders? test-tiles 41 48) => true
+    (tile-inside-borders? test-tiles 47 48) => true
+    (tile-inside-borders? test-tiles 55 48) => false
+    (tile-inside-borders? test-tiles 49 48) => false
+    (tile-inside-borders? test-tiles 6 7) => false
+    (tile-inside-borders? test-tiles 7 6) => false)
+  (fact "coordinates are shifted correctly to each direction"
+    (shift-coordinates [1 1] 0) => [1 0]
+    (shift-coordinates [1 1] 1) => [0 1]
+    (shift-coordinates [1 1] 2) => [1 2]
+    (shift-coordinates [1 1] 3) => [2 1])
+  (fact "knows if a tile is visited previously or not"
+    (tile-not-previously-visited? test-tiles 24) => false
+    (tile-not-previously-visited? test-tiles 23) => true)
+  (fact "can tell if a tile does not have a listed feature"
+    (tile-not-a-wall? test-tiles 0) => false
+    (tile-not-a-wall? test-tiles 8) => true
+    (tile-not-a-mine? test-tiles 9) => false
+    (tile-not-a-mine? test-tiles 10) => true
+    (tile-not-a-hero? test-tiles 12) => false
+    (tile-not-a-hero? test-tiles 13) => true))
+
+(facts "checks to see if a move is viable"
+  (fact "can tell if a direction is ok for exploring"
+    (direction-ok-for-exploring? test-tiles 1 8) => false
+    (direction-ok-for-exploring? test-tiles 7 8) => false
+    (direction-ok-for-exploring? test-tiles 15 8) => true
+    (direction-ok-for-exploring? test-tiles 9 8) => true
+    (direction-ok-for-exploring? test-tiles 23 16) => true
+    (direction-ok-for-exploring? test-tiles 12 19) => true)
+  (fact "can tell if a direction is ok for escaping"
+    (direction-ok-for-escaping? test-tiles 1 8) => false
+    (direction-ok-for-escaping? test-tiles 7 8) => false
+    (direction-ok-for-escaping? test-tiles 15 8) => true
+    (direction-ok-for-escaping? test-tiles 9 8) => false
+    (direction-ok-for-escaping? test-tiles 23 16) => true
+    (direction-ok-for-escaping? test-tiles 12 19) => false))
