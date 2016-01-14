@@ -1,6 +1,6 @@
 (defproject vindinium "0.1.0-SNAPSHOT"
             :description "AI for the vindinium AI contest"
-            :url "http://example.com/FIXME"
+            :url "https://github.com/DarthKipsu/vindinium"
             :license {:name "MIT"
                       :url "http://opensource.org/licenses/MIT"}
             :dependencies [[org.clojure/clojure "1.5.1"]
@@ -10,4 +10,6 @@
                            [org.clojure/core.match "0.2.1"]]
             :main ^:skip-aot vindinium.core
             :target-path "target/%s"
-            :profiles {:uberjar {:aot :all}})
+            :profiles {:uberjar {:aot :all}
+                       :dev {:dependencies [[midje "1.8.3"]]
+                             :plugins [[lein-midje "3.2"]]}})
