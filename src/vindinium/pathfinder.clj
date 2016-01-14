@@ -25,104 +25,124 @@
     (or (= :mine tile-type)
         (= :tavern tile-type))))
 
-(defn ^:private label [index]
+(defn ^:private label [direction]
   (let [labels ["north" "west" "south" "east"]]
-    (get labels index)))
+    (get labels direction)))
 
-(defn ^:private i-shift-to-label-directions [i size n]
-  (get [(- i size) (dec i) (+ i size) (inc i)] n))
+(defn ^:private north [i board-size]
+  (- i board-size))
 
-(defn ^:private all-directions-explored? [n]
-  (= n 4))
+(defn ^:private west [i]
+  (dec i))
 
-(defn ^:private tile-inside-borders? [x y size n]
-  (get [(pos? y) (pos? x) (< y (dec size)) (< x (dec size))] n))
+(defn ^:private south [i board-size]
+  (+ i board-size))
 
-(defn ^:private tile-not-previously-visited? [tiles index]
-  (not (:visited (get tiles index))))
+(defn ^:private east [i]
+  (inc i))
 
-(defn ^:private tile-not-a-wall? [tiles index]
-  (not= :wall (:tile (get tiles index))))
+(defn ^:private shift-i-to-direction [i size direction]
+  (get [(north i size) (west i) (south i size) (east i)] direction))
 
-(defn ^:private direction-ok-for-exploring? [x y size shift tiles n]
-  (and (tile-inside-borders? x y size n)
-       (tile-not-previously-visited? tiles (shift n))
-       (tile-not-a-wall? tiles (shift n))))
+(defn ^:private all-directions-explored? [direction]
+  (= direction 4))
 
-(defn ^:private direction-ok-for-escaping? [x y size shift tiles n]
-  (and (tile-inside-borders? x y size n)
-       (tile-not-a-wall? tiles (shift n))
-       (not= :mine (:tile (get tiles (shift n))))
-       (not= :hero (:tile (get tiles (shift n))))))
+(defn ^:private tile-inside-borders? [coord size direction]
+  (let [x (first coord)
+        y (second coord)]
+    (get [(pos? y) (pos? x) (< y (dec size)) (< x (dec size))] direction)))
+
+(defn ^:private shift-coordinates [coord direction]
+  (let [x (first coord)
+        y (second coord)]
+    (get [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]] direction)))
+
+(defn ^:private tile-not-previously-visited? [tiles i]
+  (not (:visited (get tiles i))))
+
+(defn ^:private tile-not-a-wall? [tiles i]
+  (not= :wall (:tile (get tiles i))))
+
+(defn ^:private tile-not-a-mine? [tiles i]
+  (not= :mine (:tile (get tiles i))))
+
+(defn ^:private tile-not-a-hero? [tiles i]
+  (not= :hero (:tile (get tiles i))))
+
+(defn ^:private direction-ok-for-exploring? [coord size shift tiles direction]
+  (and (tile-inside-borders? coord size direction)
+       (tile-not-previously-visited? tiles (shift direction))
+       (tile-not-a-wall? tiles (shift direction))))
+
+(defn ^:private direction-ok-for-escaping? [coord size shift tiles direction]
+  (and (tile-inside-borders? coord size direction)
+       (tile-not-a-wall? tiles (shift direction))
+       (tile-not-a-mine? tiles (shift direction))
+       (tile-not-a-hero? tiles (shift direction))))
 
 (defn ^:private mark-tile-as-visited [tiles index]
   (assoc-in tiles [index :visited] true))
 
-(defn ^:private shift-coordinates [x y n]
-  (get [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]] n))
-
-(defn ^:private add-node-to-queue [nodes direction x y n]
-  (let [new-coords (partial shift-coordinates x y)]
+(defn ^:private add-node-to-queue [nodes direction coord n]
+  (let [new-coords (partial shift-coordinates coord)]
     (conj nodes {:direction (conj direction (label n))
                  :coord (new-coords n)})))
 
-(defn ^:private explore-neighbouring-nodes [tiles size nodes x y i dir]
-  (let [shift (partial i-shift-to-label-directions i size)]
+(defn ^:private explore-neighbouring-nodes [tiles size nodes coord i dir]
+  (let [shift (partial shift-i-to-direction i size)]
     (loop [n 0
            acc-tiles tiles
            acc-nodes (vec (rest nodes))]
       (cond (all-directions-explored? n)
               {:tiles acc-tiles :nodes acc-nodes}
-            (direction-ok-for-exploring? x y size shift acc-tiles n)
+            (direction-ok-for-exploring? coord size shift acc-tiles n)
               (recur (inc n)
                      (mark-tile-as-visited acc-tiles (shift n))
-                     (add-node-to-queue acc-nodes dir x y n))
+                     (add-node-to-queue acc-nodes dir coord n))
             :else (recur (inc n) acc-tiles acc-nodes)))))
+
+(defn ^:private i-from [coord size]
+  (+ (* (second coord) size) (first coord)))
 
 (defn ^:private lookup-closest [found tiles size nodes id target]
   (let [node (first nodes)
-        x (first (:coord node))
-        y (second (:coord node))
-        i (+ (* y size) x)
+        coord (:coord node)
+        i (i-from coord size)
         dir (:direction node)]
     (cond (target-aqquired? found target)
             found
           (closest-mine-located? found tiles i id)
             (recur (assoc found :mine dir) tiles size (vec (rest nodes)) id target)
           (closest-tavern-located? found tiles i)
-            (recur (assoc found :tavern dir) tiles size (vec (rest nodes)) id target)
-          (enemy-located? found tiles i id)
-            (recur (assoc found (enemy tiles i) dir) tiles size nodes id target)
+              (recur (assoc found :tavern dir) tiles size (vec (rest nodes)) id target)
+            (enemy-located? found tiles i id)
+              (recur (assoc found (enemy tiles i) dir) tiles size nodes id target)
           (tavern-or-mine? tiles i)
             (recur found tiles size (vec (rest nodes)) id target)
           :else
-          (let [visited (explore-neighbouring-nodes tiles size nodes x y i dir)]
+          (let [visited (explore-neighbouring-nodes tiles size nodes coord i dir)]
             (recur found (:tiles visited) size (:nodes visited) id target)))))
 
-(defn ^:private back-away [tiles size enemy start id]
-  (let [x (first start)
-        y (second start)
-        i (+ (* y size) x)
-        shift (partial i-shift-to-label-directions i size)
-        n (atom 3)
+(defn ^:private back-away [tiles size enemy coord]
+  (let [i (i-from coord size)
+        shift (partial shift-i-to-direction i size)
         direction (atom (first enemy))]
-    (while (>= @n 0)
-      (if (and (direction-ok-for-escaping? x y size shift tiles @n)
-               (not= (first enemy) (label @n)))
-        (do (swap! direction (fn [x] (label @n))) 
-            (swap! n (fn [x] -1)))
-        (swap! n dec)))
+    (dotimes [n 4]
+      (if (and (direction-ok-for-escaping? coord size shift tiles n)
+               (not= (first enemy) (label n)))
+        (swap! direction (fn [x] (label n)))))
+    (println "Escaping to", @direction)
     @direction))
 
 (defn ^:private take-action [action input target]
   (let [board (:board (:game input))
         size (:size board)
         tiles (:tiles board)
-        start (:pos (:hero input))
+        coord (:pos (:hero input))
         id (:id (:hero input))]
     (if (= :search action)
-      (lookup-closest {} tiles size [{:direction [] :coord start}] id target)
-      (back-away tiles size target start id))))
+      (lookup-closest {} tiles size [{:direction [] :coord coord}] id target)
+      (back-away tiles size target coord))))
 
 (defn breadth-first-search
   "Takes a target to go towars (:tavern for example) and finds the nearest one
