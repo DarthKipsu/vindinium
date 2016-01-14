@@ -56,11 +56,6 @@
          (if (zero? (mod start size)) (not= i (dec start)) true)
          (if (= (dec size) (mod start size)) (not= i (inc start)) true))))
 
-(defn- ^{:testable true} shift-coordinates [coord direction]
-  (let [x (first coord)
-        y (second coord)]
-    (get [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]] direction)))
-
 (defn- ^{:testable true} tile-not-previously-visited? [tiles i]
   (not (:visited (get tiles i))))
 
@@ -84,52 +79,49 @@
        (tile-not-a-mine? tiles i)
        (tile-not-a-hero? tiles i)))
 
-(defn- mark-tile-as-visited [tiles index]
+(defn- ^{:testable true} visited [tiles index]
   (assoc-in tiles [index :visited] true))
 
-(defn- add-node-to-queue [nodes direction coord n]
-  (let [new-coords (partial shift-coordinates coord)]
-    (conj nodes {:direction (conj direction (label n))
-                 :coord (new-coords n)})))
+(defn- ^{:testable true} queue-with-new-node [nodes path direction i]
+  (conj nodes {:path (conj path (label direction))
+               :i i}))
 
-(defn- explore-neighbouring-nodes [tiles size nodes coord i dir]
+(defn- ^{:testable true} i-from [coord size]
+  (+ (* (second coord) size) (first coord)))
+
+(defn- explore-neighbouring-nodes [tiles size nodes i path]
   (let [shift (partial shift-i-to-direction i size)]
-    (loop [n 0
+    (loop [direction 0
            acc-tiles tiles
            acc-nodes (vec (rest nodes))]
-      (cond (all-directions-explored? n)
+      (cond (all-directions-explored? direction)
               {:tiles acc-tiles :nodes acc-nodes}
-            (direction-ok-for-exploring? acc-tiles (shift n) i)
-              (recur (inc n)
-                     (mark-tile-as-visited acc-tiles (shift n))
-                     (add-node-to-queue acc-nodes dir coord n))
-            :else (recur (inc n) acc-tiles acc-nodes)))))
-
-(defn- i-from [coord size]
-  (+ (* (second coord) size) (first coord)))
+            (direction-ok-for-exploring? acc-tiles (shift direction) i)
+              (recur (inc direction)
+                     (visited acc-tiles (shift direction))
+                     (queue-with-new-node acc-nodes path direction (shift direction)))
+            :else (recur (inc direction) acc-tiles acc-nodes)))))
 
 (defn- lookup-closest [found tiles size nodes id target]
   (let [node (first nodes)
-        coord (:coord node)
-        i (i-from coord size)
-        dir (:direction node)]
+        path (:path node)
+        i (:i node)]
     (cond (target-aqquired? found target)
             found
           (closest-mine-located? found tiles i id)
-            (recur (assoc found :mine dir) tiles size (vec (rest nodes)) id target)
+            (recur (assoc found :mine path) tiles size (vec (rest nodes)) id target)
           (closest-tavern-located? found tiles i)
-            (recur (assoc found :tavern dir) tiles size (vec (rest nodes)) id target)
+            (recur (assoc found :tavern path) tiles size (vec (rest nodes)) id target)
           (enemy-located? found tiles i id)
-            (recur (assoc found (enemy tiles i) dir) tiles size nodes id target)
+            (recur (assoc found (enemy tiles i) path) tiles size nodes id target)
           (tavern-or-mine? tiles i)
             (recur found tiles size (vec (rest nodes)) id target)
           :else
-          (let [visited (explore-neighbouring-nodes tiles size nodes coord i dir)]
+          (let [visited (explore-neighbouring-nodes tiles size nodes i path)]
             (recur found (:tiles visited) size (:nodes visited) id target)))))
 
-(defn- back-away [tiles size enemy coord]
-  (let [i (i-from coord size)
-        shift (partial shift-i-to-direction i size)
+(defn- back-away [tiles size enemy i]
+  (let [shift (partial shift-i-to-direction i size)
         direction (atom (first enemy))]
     (dotimes [n 4]
       (if (and (direction-ok-for-escaping? tiles (shift n) i)
@@ -142,11 +134,11 @@
   (let [board (:board (:game input))
         size (:size board)
         tiles (:tiles board)
-        coord (:pos (:hero input))
+        i (i-from (:pos (:hero input)) size)
         id (:id (:hero input))]
     (if (= :search action)
-      (lookup-closest {} tiles size [{:direction [] :coord coord}] id target)
-      (back-away tiles size target coord))))
+      (lookup-closest {} tiles size [{:path [] :i i}] id target)
+      (back-away tiles size target i))))
 
 (defn breadth-first-search
   "Takes a target to go towars (:tavern for example) and finds the nearest one

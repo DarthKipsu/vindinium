@@ -84,11 +84,6 @@
     (tile-inside-borders? test-tiles 49 48) => false
     (tile-inside-borders? test-tiles 6 7) => false
     (tile-inside-borders? test-tiles 7 6) => false)
-  (fact "coordinates are shifted correctly to each direction"
-    (shift-coordinates [1 1] 0) => [1 0]
-    (shift-coordinates [1 1] 1) => [0 1]
-    (shift-coordinates [1 1] 2) => [1 2]
-    (shift-coordinates [1 1] 3) => [2 1])
   (fact "knows if a tile is visited previously or not"
     (tile-not-previously-visited? test-tiles 24) => false
     (tile-not-previously-visited? test-tiles 23) => true)
@@ -115,3 +110,24 @@
     (direction-ok-for-escaping? test-tiles 9 8) => false
     (direction-ok-for-escaping? test-tiles 23 16) => true
     (direction-ok-for-escaping? test-tiles 12 19) => false))
+
+(def test-tiles-visited-15 [{:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall}
+                 {:tile :wall} {:tile :hero :id 1} {:tile :mine :of 1} {:tile :air} {:tile :mine} {:tile :hero :id 2} {:tile :wall}
+                 {:tile :wall} {:tile :air :visited true} {:tile :air} {:tile :air} {:tile :air} {:tile :air} {:tile :wall}
+                 {:tile :wall} {:tile :air} {:tile :tavern} {:tile :wall :visited true} {:tile :tavern} {:tile :air} {:tile :wall}
+                 {:tile :wall} {:tile :air} {:tile :air} {:tile :air} {:tile :air} {:tile :air} {:tile :wall}
+                 {:tile :wall} {:tile :hero :id 3} {:tile :mine} {:tile :air} {:tile :mine} {:tile :hero :id 4} {:tile :wall}
+                 {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall} {:tile :wall}])
+
+(facts "can modify temporary structures to keep track of route"
+  (fact "marks a tile visited after a visit to avoid walking in circles"
+    (visited test-tiles 15) => test-tiles-visited-15)
+  (fact "adds new tiles to queue to be visited later"
+    (queue-with-new-node [] [] 2 15) => [{:path ["south"] :i 15}]
+    (queue-with-new-node [{:path ["south"] :i 15}] [] 3 16)
+        => [{:path ["south"] :i 15} {:path ["east"] :i 16}]
+    (queue-with-new-node [] ["south"] 3 9) => [{:path ["south" "east"] :i 9}])
+  (fact "turns coordinates to map index"
+    (i-from [2 1] 7) => 9
+    (i-from [0 0] 7) => 0
+    (i-from [6 6] 7) => 48))
