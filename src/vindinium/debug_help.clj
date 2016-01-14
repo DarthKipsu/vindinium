@@ -19,7 +19,9 @@
                (if (= board-size (inc column)) (inc row) row)
                (if (= board-size (inc column)) 0 (inc column))))))
 
-(defn print-board-from-input [input]
+(defn print-board-from-input
+  "Prints the game board in it's true form for each iteration of a game."
+  [input]
   (let [board (:board (:game input))
         board-size (:size board)
         tiles (:tiles board)]

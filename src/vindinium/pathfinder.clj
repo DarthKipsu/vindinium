@@ -124,8 +124,14 @@
       (lookup-closest {} tiles size [{:direction [] :coord start}] id target)
       (back-away tiles size target start id))))
 
-(defn breadth-first-search [input target]
+(defn breadth-first-search
+  "Takes a target to go towars (:tavern for example) and finds the nearest one
+  using breadth first search. Observes and records the locations of other points
+  of interests on the way."
+  [input target]
   (take-action :search input target))
 
-(defn escape-enemy [input enemy]
+(defn escape-enemy
+  "Backs away from the nearest enemy to avoid getting hit with low health."
+  [input enemy]
   (take-action :escape input enemy))

@@ -37,6 +37,11 @@
   (let [trivial-distances (partial set-trivial-distances tiles n)]
     (map-indexed trivial-distances tiles))) ; Keskeneräinen!!!
 
-(defn map-board [board spawnPos]
+(defn map-board
+  "Will produce distances and routes from all points in the map to all other
+  points. This will allow making fast decisions without recalculating everything
+  each turn.
+  Not finished, should not be used."
+  [board spawnPos]
   (set-spawn-positions spawnPos (:size board))
   (create-initial-graph board))
